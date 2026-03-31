@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { UserProfile } from '../App';
 import Icon from '@/components/ui/icon';
 
@@ -29,7 +29,6 @@ const INTERESTS_LIST = [
 
 const DEPARTMENTS = ['Продукт', 'Разработка', 'Дизайн', 'Маркетинг', 'Аналитика', 'HR', 'Финансы', 'Поддержка', 'Другое'];
 const CITIES = ['Москва', 'Санкт-Петербург', 'Казань', 'Новосибирск', 'Екатеринбург', 'Удалённо'];
-const AVATARS = ['🧑‍💻', '👩‍💼', '🧑‍🎨', '👨‍🔬', '👩‍🚀', '🧑‍🏫'];
 
 const QUESTIONS = [
   {
@@ -64,19 +63,22 @@ const QUESTIONS = [
   },
 ];
 
-type Step = 'welcome' | 'name' | 'avatar' | 'department' | 'interests' | 'q0' | 'q1' | 'q2' | 'searching';
-const STEPS: Step[] = ['welcome', 'name', 'avatar', 'department', 'interests', 'q0', 'q1', 'q2', 'searching'];
+type Step = 'welcome' | 'name' | 'photo' | 'about' | 'department' | 'interests' | 'q0' | 'q1' | 'q2' | 'searching';
+const STEPS: Step[] = ['welcome', 'name', 'photo', 'about', 'department', 'interests', 'q0', 'q1', 'q2', 'searching'];
+const TOTAL_STEPS = 8;
 
 export default function OnboardingScreen({ onComplete }: Props) {
   const [stepIndex, setStepIndex] = useState(0);
   const [name, setName] = useState('');
-  const [avatar, setAvatar] = useState('🧑‍💻');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [about, setAbout] = useState('');
   const [department, setDepartment] = useState('');
   const [city, setCity] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [searchProgress, setSearchProgress] = useState(0);
   const [fade, setFade] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const step = STEPS[stepIndex];
 
@@ -86,9 +88,7 @@ export default function OnboardingScreen({ onComplete }: Props) {
       const next = stepIndex + 1;
       setStepIndex(next);
       setFade(true);
-      if (STEPS[next] === 'searching') {
-        startSearch();
-      }
+      if (STEPS[next] === 'searching') startSearch();
     }, 180);
   };
 
@@ -108,7 +108,15 @@ export default function OnboardingScreen({ onComplete }: Props) {
         p = 100;
         clearInterval(interval);
         setTimeout(() => {
-          onComplete({ name: name || 'Алексей', department, city, avatar, interests });
+          onComplete({
+            name: name || 'Алексей',
+            department,
+            city,
+            avatar: '🧑‍💻',
+            photo,
+            about,
+            interests,
+          });
         }, 700);
       }
       setSearchProgress(Math.min(p, 100));
@@ -121,10 +129,19 @@ export default function OnboardingScreen({ onComplete }: Props) {
     );
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhoto(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const canNext: Record<Step, boolean> = {
     welcome: true,
     name: name.trim().length >= 2,
-    avatar: true,
+    photo: true,
+    about: true,
     department: department !== '' && city !== '',
     interests: interests.length >= 3,
     q0: !!answers['format'],
@@ -194,7 +211,9 @@ export default function OnboardingScreen({ onComplete }: Props) {
 
         {step === 'name' && (
           <div className="flex-1 flex flex-col pt-4">
-            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">Шаг 1 из 7</span>
+            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">
+              Шаг 1 из {TOTAL_STEPS}
+            </span>
             <h2 className="text-2xl font-black text-[#141414] mb-2">Как тебя зовут?</h2>
             <p className="text-[#767676] mb-8 text-sm">Коллеги увидят твоё имя в профиле</p>
             <input
@@ -207,42 +226,113 @@ export default function OnboardingScreen({ onComplete }: Props) {
               autoFocus
             />
             <div className="mt-auto pt-8">
-              <button className="t-btn" onClick={goNext} disabled={!canNext.name} style={{ opacity: canNext.name ? 1 : 0.35 }}>Продолжить</button>
+              <button className="t-btn" onClick={goNext} disabled={!canNext.name} style={{ opacity: canNext.name ? 1 : 0.35 }}>
+                Продолжить
+              </button>
             </div>
           </div>
         )}
 
-        {step === 'avatar' && (
+        {step === 'photo' && (
           <div className="flex-1 flex flex-col pt-4">
-            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">Шаг 2 из 7</span>
-            <h2 className="text-2xl font-black text-[#141414] mb-2">Выбери аватар</h2>
-            <p className="text-[#767676] mb-8 text-sm">Как тебя будут видеть коллеги</p>
-            <div className="grid grid-cols-3 gap-4">
-              {AVATARS.map((a) => (
+            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">
+              Шаг 2 из {TOTAL_STEPS}
+            </span>
+            <h2 className="text-2xl font-black text-[#141414] mb-2">Добавь фото</h2>
+            <p className="text-[#767676] mb-8 text-sm">Профили с фото получают в 3 раза больше откликов</p>
+
+            <div className="flex flex-col items-center flex-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+
+              {photo ? (
+                <div className="relative mb-6">
+                  <img
+                    src={photo}
+                    alt="Фото профиля"
+                    className="w-44 h-44 rounded-[36px] object-cover"
+                    style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute bottom-2 right-2 w-9 h-9 bg-[#FFDD2D] rounded-full flex items-center justify-center"
+                    style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+                  >
+                    <Icon name="Pencil" size={15} />
+                  </button>
+                </div>
+              ) : (
                 <button
-                  key={a}
-                  onClick={() => setAvatar(a)}
-                  className="aspect-square rounded-3xl text-5xl flex items-center justify-center transition-all duration-200"
-                  style={{
-                    background: avatar === a ? '#FFDD2D' : '#F6F6F6',
-                    transform: avatar === a ? 'scale(1.06)' : 'scale(1)',
-                    boxShadow: avatar === a ? '0 6px 20px rgba(255,221,45,0.4)' : 'none',
-                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-44 h-44 rounded-[36px] border-2 border-dashed border-[#E8E8E8] bg-[#F6F6F6] flex flex-col items-center justify-center gap-3 mb-6 transition-all hover:border-[#FFDD2D] active:scale-95"
                 >
-                  {a}
+                  <div className="w-14 h-14 bg-[#FFDD2D] rounded-2xl flex items-center justify-center">
+                    <Icon name="Camera" size={24} />
+                  </div>
+                  <p className="text-sm font-semibold text-[#141414]">Загрузить фото</p>
+                  <p className="text-xs text-[#A0A0A0]">JPG, PNG до 10 МБ</p>
                 </button>
-              ))}
+              )}
+
+              {photo && (
+                <p className="text-sm text-[#767676] text-center mb-2">
+                  Отлично выглядишь, {name}! 👍
+                </p>
+              )}
             </div>
-            <div className="mt-auto pt-8">
-              <button className="t-btn" onClick={goNext}>Продолжить</button>
+
+            <div className="pt-4 space-y-3">
+              <button className="t-btn" onClick={goNext}>
+                {photo ? 'Продолжить' : 'Продолжить без фото'}
+              </button>
+              {!photo && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="t-btn-outline"
+                >
+                  Выбрать фото
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {step === 'about' && (
+          <div className="flex-1 flex flex-col pt-4">
+            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">
+              Шаг 3 из {TOTAL_STEPS}
+            </span>
+            <h2 className="text-2xl font-black text-[#141414] mb-2">О себе</h2>
+            <p className="text-[#767676] mb-6 text-sm">Напиши пару слов — коллеги увидят это в анкете</p>
+            <textarea
+              placeholder={`Например: Продакт в команде карт. Обожаю горы, хорошие книги и специалити-кофе ☕`}
+              value={about}
+              onChange={(e) => setAbout(e.target.value)}
+              maxLength={300}
+              rows={5}
+              className="w-full border-2 border-[#E8E8E8] focus:border-[#FFDD2D] rounded-2xl px-5 py-4 text-sm font-medium outline-none transition-colors resize-none leading-relaxed"
+              autoFocus
+            />
+            <p className="text-xs text-[#A0A0A0] text-right mt-2">{about.length}/300</p>
+            <div className="mt-auto pt-6">
+              <button className="t-btn" onClick={goNext}>
+                {about.trim().length > 0 ? 'Продолжить' : 'Пропустить'}
+              </button>
             </div>
           </div>
         )}
 
         {step === 'department' && (
           <div className="flex-1 flex flex-col pt-4">
-            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">Шаг 3 из 7</span>
-            <h2 className="text-2xl font-black text-[#141414] mb-2">Расскажи о себе</h2>
+            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">
+              Шаг 4 из {TOTAL_STEPS}
+            </span>
+            <h2 className="text-2xl font-black text-[#141414] mb-2">Где работаешь?</h2>
             <p className="text-[#767676] mb-6 text-sm">Отдел и город помогут найти коллег рядом</p>
             <p className="text-sm font-semibold text-[#141414] mb-3">Отдел</p>
             <div className="flex flex-wrap gap-2 mb-6">
@@ -257,14 +347,18 @@ export default function OnboardingScreen({ onComplete }: Props) {
               ))}
             </div>
             <div className="mt-auto pt-8">
-              <button className="t-btn" onClick={goNext} disabled={!canNext.department} style={{ opacity: canNext.department ? 1 : 0.35 }}>Продолжить</button>
+              <button className="t-btn" onClick={goNext} disabled={!canNext.department} style={{ opacity: canNext.department ? 1 : 0.35 }}>
+                Продолжить
+              </button>
             </div>
           </div>
         )}
 
         {step === 'interests' && (
           <div className="flex-1 flex flex-col pt-4">
-            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">Шаг 4 из 7</span>
+            <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">
+              Шаг 5 из {TOTAL_STEPS}
+            </span>
             <h2 className="text-2xl font-black text-[#141414] mb-2">Твои интересы</h2>
             <p className="text-[#767676] mb-6 text-sm">Выбери минимум 3 — по ним найдём совпадения</p>
             <div className="flex flex-wrap gap-2 flex-1 content-start overflow-y-auto">
@@ -285,7 +379,9 @@ export default function OnboardingScreen({ onComplete }: Props) {
                   Выбрано: <span className="font-bold text-[#141414]">{interests.length}</span>
                 </p>
               )}
-              <button className="t-btn" onClick={goNext} disabled={!canNext.interests} style={{ opacity: canNext.interests ? 1 : 0.35 }}>Продолжить</button>
+              <button className="t-btn" onClick={goNext} disabled={!canNext.interests} style={{ opacity: canNext.interests ? 1 : 0.35 }}>
+                Продолжить
+              </button>
             </div>
           </div>
         )}
@@ -293,11 +389,11 @@ export default function OnboardingScreen({ onComplete }: Props) {
         {(step === 'q0' || step === 'q1' || step === 'q2') && (() => {
           const qIndex = parseInt(step[1]);
           const q = QUESTIONS[qIndex];
-          const stepNum = 5 + qIndex;
+          const stepNum = 6 + qIndex;
           return (
             <div className="flex-1 flex flex-col pt-4">
               <span className="text-xs font-bold text-[#FFDD2D] bg-[#141414] self-start px-3 py-1 rounded-full mb-6">
-                Шаг {stepNum} из 7
+                Шаг {stepNum} из {TOTAL_STEPS}
               </span>
               <h2 className="text-2xl font-black text-[#141414] mb-2">{q.question}</h2>
               <p className="text-[#767676] mb-8 text-sm">Выбери один вариант</p>
@@ -342,10 +438,17 @@ export default function OnboardingScreen({ onComplete }: Props) {
         {step === 'searching' && (
           <div className="flex-1 flex flex-col items-center justify-center">
             <div
-              className="w-28 h-28 bg-[#141414] rounded-[32px] flex items-center justify-center text-5xl mb-8"
-              style={{ boxShadow: '0 12px 40px rgba(20,20,20,0.15)' }}
+              className="w-28 h-28 rounded-[32px] overflow-hidden mb-8 flex items-center justify-center"
+              style={{
+                background: photo ? 'transparent' : '#141414',
+                boxShadow: '0 12px 40px rgba(20,20,20,0.15)',
+              }}
             >
-              {avatar}
+              {photo ? (
+                <img src={photo} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-5xl">🧑‍💻</span>
+              )}
             </div>
             <h2 className="text-2xl font-black text-[#141414] mb-2 text-center">Ищем совпадения…</h2>
             <p className="text-[#767676] text-center text-sm mb-10">

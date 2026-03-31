@@ -13,6 +13,8 @@ export interface UserProfile {
   department: string;
   city: string;
   avatar: string;
+  photo: string | null;
+  about: string;
   interests: string[];
 }
 

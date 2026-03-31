@@ -19,14 +19,24 @@ export default function ProfileScreen({ profile }: Props) {
         style={{ background: 'linear-gradient(180deg, #141414 0%, #1e1e1e 100%)' }}
       >
         <div
-          className="w-24 h-24 bg-[#FFDD2D] rounded-[28px] flex items-center justify-center text-5xl mb-4"
-          style={{ boxShadow: '0 8px 24px rgba(255,221,45,0.3)' }}
+          className="w-24 h-24 rounded-[28px] overflow-hidden mb-4 flex items-center justify-center"
+          style={{
+            background: profile.photo ? 'transparent' : '#FFDD2D',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          }}
         >
-          {profile.avatar}
+          {profile.photo ? (
+            <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-5xl">{profile.avatar}</span>
+          )}
         </div>
         <h2 className="text-xl font-black text-white mb-1">{profile.name}</h2>
         <p className="text-[#FFDD2D] text-sm font-medium mb-1">{profile.department}</p>
         <p className="text-[#767676] text-xs">{profile.city}</p>
+        {profile.about && (
+          <p className="text-[#A0A0A0] text-xs mt-3 max-w-xs leading-relaxed">{profile.about}</p>
+        )}
       </div>
 
       <div className="px-5 -mt-4">
