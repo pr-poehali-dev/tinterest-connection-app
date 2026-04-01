@@ -9,6 +9,7 @@ import Icon from '@/components/ui/icon';
 export type Screen = 'onboarding' | 'recommendations' | 'notifications' | 'chats' | 'profile';
 
 export interface UserProfile {
+  id: string;
   name: string;
   department: string;
   city: string;
@@ -28,7 +29,7 @@ const NAV_ITEMS = [
 export default function App() {
   const [screen, setScreen] = useState<Screen>('onboarding');
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [notifCount] = useState(3);
+  const [notifCount] = useState(0);
 
   const handleOnboardingComplete = (p: UserProfile) => {
     setProfile(p);
@@ -44,7 +45,7 @@ export default function App() {
       <div className="flex-1 pb-24 overflow-y-auto">
         {screen === 'recommendations' && <RecommendationsScreen profile={profile!} onNavigate={setScreen} />}
         {screen === 'notifications' && <NotificationsScreen />}
-        {screen === 'chats' && <ChatsScreen />}
+        {screen === 'chats' && <ChatsScreen userId={profile!.id} />}
         {screen === 'profile' && <ProfileScreen profile={profile!} />}
       </div>
 

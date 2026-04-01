@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { UserProfile } from '../App';
 import Icon from '@/components/ui/icon';
+import { createUser } from '@/api';
 
 interface Props {
   onComplete: (profile: UserProfile) => void;
@@ -102,22 +103,53 @@ export default function OnboardingScreen({ onComplete }: Props) {
 
   const startSearch = () => {
     let p = 0;
+    let saved = false;
     const interval = setInterval(() => {
       p += Math.random() * 18 + 8;
       if (p >= 100) {
         p = 100;
         clearInterval(interval);
-        setTimeout(() => {
-          onComplete({
+        if (!saved) {
+          saved = true;
+          createUser({
             name: name || 'Алексей',
             department,
             city,
-            avatar: '🧑‍💻',
+            avatar: '🧑',
             photo,
             about,
             interests,
+            format_answer: answers['format'] || '',
+            vibe_answer: answers['vibe'] || '',
+            goal_answer: answers['goal'] || '',
+          }).then((user) => {
+            setTimeout(() => {
+              onComplete({
+                id: user.id,
+                name: user.name,
+                department: user.department,
+                city: user.city,
+                avatar: user.avatar,
+                photo: user.photo,
+                about: user.about,
+                interests: user.interests,
+              });
+            }, 700);
+          }).catch(() => {
+            setTimeout(() => {
+              onComplete({
+                id: crypto.randomUUID(),
+                name: name || 'Алексей',
+                department,
+                city,
+                avatar: '🧑',
+                photo,
+                about,
+                interests,
+              });
+            }, 700);
           });
-        }, 700);
+        }
       }
       setSearchProgress(Math.min(p, 100));
     }, 300);

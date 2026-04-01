@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Create user",
+      "method": "POST",
+      "path": "/",
+      "body": {"name": "Тест Тестов", "department": "Разработка", "city": "Москва", "avatar": "🧑", "about": "Тестовый пользователь", "interests": ["Технологии","Книги"], "format_answer": "Кофе вживую", "vibe_answer": "Всё понемногу", "goal_answer": "Нетворкинг"},
+      "expectedStatus": 200,
+      "expectedBody": {"name": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
